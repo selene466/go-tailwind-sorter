@@ -13,6 +13,7 @@ import (
 var check bool
 var verbose bool
 var configFile string
+var version string = "dev"
 
 var rootCmd = &cobra.Command{
 	Use:   "tailwind-sorter [PATH...]",
@@ -33,7 +34,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if err := sorterService.Run(args); err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, color.RedString("Error running sorter service: %v", err))
 			os.Exit(1)
 		}
 	},
@@ -41,12 +42,12 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
 func init() {
+	rootCmd.Version = version
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "Path to a custom TOML config file.")
 
 	rootCmd.Flags().BoolVar(&check, "check", false, "Check if files are sorted without making changes.")

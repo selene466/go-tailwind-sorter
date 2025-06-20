@@ -26,26 +26,40 @@ This means I often work in environments without a Node.js toolchain. Setting up 
 
 ## 🚀 Installation
 
-### With `go install` (Recommended)
+### From GitHub Releases (Recommended for most users)
+
+Download the pre-compiled binary for your operating system from the [**Latest Release**](https://github.com/Dexter2389/go-tailwind-sorter/releases/latest) page. Unpack the archive and place the `tailwind-sorter` binary in a directory included in your system's `PATH`.
+
+### With `go install`
 
 If you have Go installed, you can install `go-tailwind-sorter` globally:
 ```bash
 go install github.com/Dexter2389/go-tailwind-sorter@latest
 ```
 
-### From GitHub Releases
-
-Download the pre-compiled binary for your operating system from the [Releases](https://github.com/Dexter2389/go-tailwind-sorter/releases) page and place it in a directory in your `PATH`.
-
 ### From Source
 
 ```bash
 git clone https://github.com/Dexter2389/go-tailwind-sorter.git
 cd go-tailwind-sorter
-go build -o tailwind-sorter .
+
+# Build with proper version info
+VERSION=$(git describe --tags --abbrev=0)
+go build -ldflags="-X 'github.com/Dexter2389/go-tailwind-sorter/cmd.version=${VERSION}'" -o tailwind-sorter .
+
 # Then move the binary to a location in your PATH
 # sudo mv ./tailwind-sorter /usr/local/bin/
 ```
+
+## Usage
+
+The CLI is designed to be simple and intuitive.
+
+### Global Flags
+
+-   `--check`: Check files that are not formatted.
+-   `--config <path>`: Path to a custom TOML config file.
+-   `--version`: Show the application version.
 
 ## ⚙️ Configuration
 

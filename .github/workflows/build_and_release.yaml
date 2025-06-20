@@ -1,0 +1,94 @@
+name: Build and Release Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  # This permission is required for the gh CLI to create releases and upload assets.
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24" # Or match the version in your go.mod
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          BINARY_NAME="tailwind-sorter"
+          if [ "$GOOS" == "windows" ]; then
+            BINARY_NAME+=".exe"
+          fi
+          VERSION="${{ github.ref_name }}"
+          # Use -trimpath to create reproducible builds and -s -w to shrink the binary size.
+          go build -trimpath -ldflags="-s -w -X 'github.com/Dexter2389/go-tailwind-sorter/cmd.version=${VERSION}'" -o "dist/${BINARY_NAME}" .
+
+      - name: Create archive
+        run: |
+          # Use a consistent name for the artifact that will be created.
+          ARTIFACT_NAME="tailwind-sorter-${{ matrix.goos }}-${{ matrix.goarch }}"
+
+          # Copy essential files into the distribution folder before archiving.
+          cp LICENSE README.md dist/
+
+          # Create the archive.
+          if [ "${{ matrix.goos }}" == "windows" ]; then
+            cd dist && zip -r "../${ARTIFACT_NAME}.zip" . && cd ..
+          else
+            tar -czf "${ARTIFACT_NAME}.tar.gz" -C dist .
+          fi
+
+      # Upload the archive as an artifact. We use a glob to catch both .zip and .tar.gz.
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}-artifact
+          path: tailwind-sorter-*.tar.gz
+          if-no-files-found: error # Fail the workflow if the archive isn't found
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # This is the new step using the official GitHub CLI.
+      - name: Create GitHub Release
+        env:
+          # The GITHUB_TOKEN is required for the gh CLI to authenticate.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Use gh release create to create a new release.
+          # The command takes the tag name as the first argument.
+          # The final arguments are the files to upload as assets.
+          gh release create ${{ github.ref_name }} \
+            --title "Release ${{ github.ref_name }}" \
+            artifacts/*/*

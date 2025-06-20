@@ -49,27 +49,35 @@ jobs:
           go build -trimpath -ldflags="-s -w -X 'github.com/Dexter2389/go-tailwind-sorter/cmd.version=${VERSION}'" -o "dist/${BINARY_NAME}" .
 
       - name: Create archive
+        id: archive # Give the step an ID to reference its outputs
         run: |
-          # Use a consistent name for the artifact that will be created.
-          ARTIFACT_NAME="tailwind-sorter-${{ matrix.goos }}-${{ matrix.goarch }}"
+          # The base name for the archive, without extension.
+          ARCHIVE_BASENAME="tailwind-sorter-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}"
 
-          # Copy essential files into the distribution folder before archiving.
+          # Copy essential files into the distribution folder.
           cp LICENSE README.md dist/
 
-          # Create the archive.
+          # Create the platform-specific archive and set the output variable.
           if [ "${{ matrix.goos }}" == "windows" ]; then
-            cd dist && zip -r "../${ARTIFACT_NAME}.zip" . && cd ..
+            ARCHIVE_PATH="${ARCHIVE_BASENAME}.zip"
+            cd dist && zip -r "../${ARCHIVE_PATH}" . && cd ..
           else
-            tar -czf "${ARTIFACT_NAME}.tar.gz" -C dist .
+            ARCHIVE_PATH="${ARCHIVE_BASENAME}.tar.gz"
+            tar -czf "${ARCHIVE_PATH}" -C dist .
           fi
 
-      # Upload the archive as an artifact. We use a glob to catch both .zip and .tar.gz.
+          # Use a GitHub step output to pass the archive path to the next step.
+          echo "path=${ARCHIVE_PATH}" >> $GITHUB_OUTPUT
+
+      # This step now uses the output from the 'archive' step.
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.goos }}-${{ matrix.goarch }}-artifact
-          path: tailwind-sorter-*.tar.gz
-          if-no-files-found: error # Fail the workflow if the archive isn't found
+          # Use a consistent name for the artifact container.
+          name: tailwind-sorter-${{ matrix.goos }}-${{ matrix.goarch }}
+          # The path is now dynamically set from the previous step's output.
+          path: ${{ steps.archive.outputs.path }}
+          if-no-files-found: error
 
   release:
     needs: build

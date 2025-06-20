@@ -53,7 +53,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           VERSION: ${{ github.ref_name }}
-        run: BINARY_NAME=$(./scripts/build.sh | tee /dev/stderr | tail -n 1) && echo "path=${BINARY_NAME}" >> $GITHUB_OUTPUT
+        run: BINARY_NAME=$(./scripts/build.sh | tee /dev/stderr | tail -n 1) && echo "path=dist/${BINARY_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

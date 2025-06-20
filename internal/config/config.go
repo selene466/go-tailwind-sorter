@@ -93,10 +93,10 @@ func defaultConfig() *Config {
 
 func (config *Config) merge(userConfig *UserConfig) {
 	if len(userConfig.FilePatterns) > 0 {
-		config.FilePatterns = append(config.FilePatterns, userConfig.FilePatterns...)
+		config.FilePatterns = userConfig.FilePatterns
 	}
 
 	if len(userConfig.ClassAttributes) > 0 {
-		config.ClassAttributes = append(config.ClassAttributes, userConfig.ClassAttributes...)
+		config.ClassAttributes = userConfig.ClassAttributes
 	}
 }

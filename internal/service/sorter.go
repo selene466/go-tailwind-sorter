@@ -1,7 +1,6 @@
 package service
 
 import (
-	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
@@ -12,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/dexter2389/go-tailwind-sorter/internal/config"
-	"github.com/fatih/color"
+	"github.com/dexter2389/go-tailwind-sorter/internal/utils"
 )
 
 const numWorkers int = 4
@@ -21,15 +20,13 @@ var arbitraryVariantRegex *regexp.Regexp = regexp.MustCompile(`^\[.+?\]`)
 var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(\$\{[^}]*\})`)
 
 type Sorter struct {
-	Check   bool
-	Verbose bool
-	Config  *config.Config
+	Fix    bool
+	Config *config.Config
 
 	classAttributesRegex *regexp.Regexp
-	stderr               func(format string, a ...any)
 }
 
-func SorterServiceNew(config *config.Config, check, verbose bool) (*Sorter, error) {
+func SorterServiceNew(config *config.Config, fix bool) (*Sorter, error) {
 	regexPattern := fmt.Sprintf(`((?:%s))(\s*=\s*)(["'`+"`"+`])(.*?)(["'`+"`"+`])`, strings.Join(config.ClassAttributes, "|"))
 
 	classAttributesRegex, err := regexp.Compile(regexPattern)
@@ -38,14 +35,10 @@ func SorterServiceNew(config *config.Config, check, verbose bool) (*Sorter, erro
 	}
 
 	return &Sorter{
-		Check:   check,
-		Verbose: verbose,
-		Config:  config,
+		Fix:    fix,
+		Config: config,
 
 		classAttributesRegex: classAttributesRegex,
-		stderr: func(format string, a ...any) {
-			color.New(color.FgWhite).Fprintf(os.Stderr, format, a...)
-		},
 	}, nil
 }
 
@@ -208,73 +201,81 @@ func (sorter *Sorter) findFiles(paths []string) ([]string, error) {
 	return result, nil
 }
 
-func (sorter *Sorter) printSummary(filesToFormat []string) error {
-	if sorter.Check {
-		if len(filesToFormat) > 0 {
-			sorter.stderr(color.RedString("\nError: The following files are not formatted correctly:\n"))
-			for _, file := range filesToFormat {
-				sorter.stderr(color.YellowString("- %s\n", file))
-			}
-			return fmt.Errorf("%d files need formatting", len(filesToFormat))
+type Violation struct {
+	Line int
+	Col  int
+	Rule string
+	Msg  string
+}
+
+func (sorter *Sorter) findViolations(content []byte) []Violation {
+	var violations []Violation
+
+	matches := sorter.classAttributesRegex.FindAllSubmatchIndex(content, -1)
+	for _, match := range matches {
+		// match[8] and match[9] are the start and end of the tw_class string itself.
+		startOffset, endOffset := match[8], match[9]
+
+		twClassString := string(content[startOffset:endOffset])
+		sortedTWClassString := sorter.sortTWClassString(twClassString)
+
+		if twClassString != sortedTWClassString {
+			line, col := utils.OffsetToLineCol(content, startOffset)
+			violations = append(violations, Violation{
+				Line: line,
+				Col:  col,
+				Rule: "TWS001",
+				Msg:  "Unsorted Tailwind classes",
+			})
 		}
-		sorter.stderr(color.GreenString("\n✅ All files are formatted correctly.\n"))
-	} else if len(filesToFormat) > 0 {
-		sorter.stderr(color.GreenString("\n✅ Successfully formatted %d file(s).\n", len(filesToFormat)))
-	} else {
-		sorter.stderr(color.GreenString("\n✨ All files were already formatted.\n"))
+
 	}
-	return nil
+
+	return violations
 }
 
-type processResult struct {
-	filePath        string
-	changed         bool
-	originalContent string
-	sortedContent   string
-	err             error
+type FileResult struct {
+	FilePath    string
+	Violations  []Violation
+	SortedBytes []byte
+	Err         error
 }
 
-func (sorter *Sorter) worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- processResult) {
+func (sorter *Sorter) worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- FileResult) {
 	defer wg.Done()
 
 	for filePath := range jobs {
-		if sorter.Verbose {
-			sorter.stderr("Processing %s...\n", color.CyanString(filePath))
-		}
-
-		originalFileContent, err := os.ReadFile(filePath)
+		originalContent, err := os.ReadFile(filePath)
 		if err != nil {
-			results <- processResult{err: fmt.Errorf("reading file %s: %w", filePath, err)}
+			results <- FileResult{Err: fmt.Errorf("reading file %s: %w", filePath, err)}
 			continue
 		}
 
-		sortedFileContent := sorter.processFileContent(originalFileContent)
-		results <- processResult{
-			filePath:        filePath,
-			changed:         !bytes.Equal(originalFileContent, sortedFileContent),
-			originalContent: string(originalFileContent),
-			sortedContent:   string(sortedFileContent),
+		violations := sorter.findViolations(originalContent)
+		if len(violations) == 0 {
+			continue
+		}
+
+		sortedContent := sorter.processFileContent(originalContent)
+		results <- FileResult{
+			FilePath:    filePath,
+			Violations:  violations,
+			SortedBytes: sortedContent,
 		}
 	}
 }
 
-func (sorter *Sorter) Run(paths []string) error {
+func (sorter *Sorter) Run(paths []string) ([]FileResult, error) {
 	filesToProcess, err := sorter.findFiles(paths)
-
 	if err != nil {
-		return fmt.Errorf("failed to find files: %w", err)
-	}
-
-	if len(filesToProcess) == 0 {
-		sorter.stderr(color.YellowString("Warning: No files found to process\n"))
-		return nil
+		return nil, fmt.Errorf("failed to find files: %w", err)
 	}
 
 	var wg sync.WaitGroup
 	jobs := make(chan string, len(filesToProcess))
-	results := make(chan processResult, len(filesToProcess))
+	results := make(chan FileResult, len(filesToProcess))
 
-	for idx := 0; idx < numWorkers; idx++ {
+	for range numWorkers {
 		wg.Add(1)
 		go sorter.worker(&wg, jobs, results)
 	}
@@ -287,23 +288,27 @@ func (sorter *Sorter) Run(paths []string) error {
 	wg.Wait()
 	close(results)
 
-	var filesToFormat []string
+	var fileResults []FileResult
 	for result := range results {
-		if result.err != nil {
-			sorter.stderr(color.RedString("Error: %v\n", result.err))
+		if result.Err != nil {
+			fileResults = append(fileResults, result)
 			continue
 		}
-		if result.changed {
-			filesToFormat = append(filesToFormat, result.filePath)
 
-			if !sorter.Check {
-				sorter.stderr("Formatting %s\n", color.YellowString(result.filePath))
-				if err := os.WriteFile(result.filePath, []byte(result.sortedContent), 0644); err != nil {
-					sorter.stderr(color.RedString("Error writing file %s: %v\n", result.filePath, err))
+		if len(result.Violations) > 0 {
+			fileResults = append(fileResults, result)
+
+			if sorter.Fix {
+				if err := os.WriteFile(result.FilePath, result.SortedBytes, 0644); err != nil {
+					result.Err = fmt.Errorf("failed to write fixes to %s: %w", result.FilePath, err)
 				}
 			}
 		}
 	}
 
-	return sorter.printSummary(filesToFormat)
+	sort.Slice(fileResults, func(i, j int) bool {
+		return fileResults[i].FilePath < fileResults[j].FilePath
+	})
+
+	return fileResults, nil
 }

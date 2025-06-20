@@ -6,12 +6,12 @@ import (
 
 	"github.com/dexter2389/go-tailwind-sorter/internal/config"
 	"github.com/dexter2389/go-tailwind-sorter/internal/service"
+	"github.com/dexter2389/go-tailwind-sorter/internal/utils"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-var check bool
-var verbose bool
+var fix bool
 var configFile string
 var Version = "dev"
 
@@ -27,16 +27,50 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		sorterService, err := service.SorterServiceNew(config, check, verbose)
+		sorterService, err := service.SorterServiceNew(config, fix)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, color.RedString("Error initializing sorter: %v", err))
 			os.Exit(1)
 		}
 
-		if err := sorterService.Run(args); err != nil {
+		fileResults, err := sorterService.Run(args)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, color.RedString("Error during execution: %v", err))
 			os.Exit(1)
 		}
+
+		totalViolations := processFileResultsToGetViolations(fileResults)
+
+		if totalViolations > 0 {
+			utils.PrintSummary(totalViolations, fix)
+			os.Exit(1)
+		} else {
+			fmt.Fprintln(os.Stderr, color.GreenString("✨ All files are sorted."))
+		}
+
 	},
+}
+
+func processFileResultsToGetViolations(fileResults []service.FileResult) int {
+	totalViolations := 0
+
+	for _, fileResult := range fileResults {
+		if fileResult.Err != nil {
+			fmt.Fprintln(os.Stderr, color.RedString("Error processing %s: %w", fileResult.FilePath, fileResult.Err))
+			continue
+		}
+
+		if len(fileResult.Violations) > 0 {
+			fmt.Fprintln(os.Stderr, color.New(color.Bold).Sprint(fileResult.FilePath))
+			for _, violation := range fileResult.Violations {
+				lineCol := fmt.Sprintf("%d:%d", violation.Line, violation.Col)
+				fmt.Fprintf(os.Stderr, "  %s  %s  %s\n", color.New(color.Faint).Sprint(lineCol), color.RedString(violation.Rule), violation.Msg)
+				totalViolations++
+			}
+		}
+	}
+
+	return totalViolations
 }
 
 func Execute() {
@@ -49,6 +83,5 @@ func init() {
 	rootCmd.Version = Version
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "Path to a custom TOML config file.")
 
-	rootCmd.Flags().BoolVar(&check, "check", false, "Check if files are sorted without making changes.")
-	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output.")
+	rootCmd.Flags().BoolVar(&fix, "fix", false, "Apply fixes to the files.")
 }

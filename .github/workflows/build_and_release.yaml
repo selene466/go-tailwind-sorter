@@ -5,7 +5,7 @@ on:
   # Runs on pushes targeting the specific branch
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -65,6 +65,8 @@ jobs:
   # Release job
   release:
     needs: build
+    environment:
+      name: release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

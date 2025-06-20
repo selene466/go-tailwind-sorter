@@ -52,35 +52,66 @@ func New(configFile string) (*Config, error) {
 
 func defaultConfig() *Config {
 	return &Config{
-		ClassOrder: []string{"box-border", "box-content", "block", "inline-block", "inline", "flex", "inline-flex", "table", "inline-table",
+		ClassOrder: []string{
+			// Layout (Box Sizing, Display, Floats, Clear, Isolation, Object Fit/Position, Overflow, Overscroll, Position, Visibility, Z-Index)
+			"box-border", "box-content", "block", "inline-block", "inline", "flex", "inline-flex", "table", "inline-table",
 			"table-caption", "table-cell", "table-column", "table-column-group", "table-footer-group", "table-header-group",
 			"table-row-group", "table-row", "flow-root", "grid", "inline-grid", "contents", "list-item", "hidden", "float-",
 			"clear-", "isolate", "isolation-auto", "object-", "overflow-", "overscroll-", "static", "fixed", "absolute",
 			"relative", "sticky", "top-", "right-", "bottom-", "left-", "inset-", "visible", "invisible", "z-",
+
+			// Flexbox & Grid
 			"flex-basis-", "flex-direction-", "flex-wrap-", "flex-", "flex-grow", "flex-shrink", "order-", "grid-cols-",
 			"grid-col-", "grid-rows-", "grid-row-", "grid-flow-", "gap-", "justify-", "justify-items-", "justify-self-",
 			"items-", "align-", "place-content-", "place-items-", "place-self-",
+
+			// Spacing (Padding, Margin, Space Between)
 			"p-", "px-", "py-", "pt-", "pr-", "pb-", "pl-", "m-", "mx-", "my-", "mt-", "mr-", "mb-", "ml-", "space-",
+
+			// Sizing (Width, Min-Width, Max-Width, Height, Min-Height, Max-Height)
 			"w-", "min-w-", "max-w-", "h-", "min-h-", "max-h-",
+
+			// Typography
 			"font-", "text-", "italic", "not-italic", "font-weight-", "font-variant-numeric-", "letter-spacing-",
 			"line-clamp-", "line-height-", "list-", "text-align-", "text-color-", "text-decoration-",
 			"text-decoration-color-", "text-decoration-style-", "text-decoration-thickness-", "text-underline-offset-",
 			"text-transform-", "text-overflow-", "text-indent-", "vertical-align-", "whitespace-", "break-",
 			"content-",
+
+			// Backgrounds
 			"bg-", "bg-opacity-", "bg-origin-", "bg-position-", "bg-repeat-", "bg-size-", "bg-image-", "gradient-to-",
 			"from-", "via-", "to-",
+
+			// Borders
 			"rounded-", "border", "border-", "border-opacity-", "border-style-", "divide-", "divide-opacity-",
 			"divide-style-", "outline-", "outline-offset-", "outline-style-", "ring-", "ring-offset-", "ring-opacity-",
+
+			// Effects (Box Shadow, Opacity, Mix Blend, Background Blend)
 			"shadow-", "opacity-", "mix-blend-", "bg-blend-",
+
+			// Filters (Blur, Brightness, Contrast, Drop Shadow, Grayscale, Hue Rotate, Invert, Saturate, Sepia, Backdrop)
 			"filter", "blur-", "brightness-", "contrast-", "drop-shadow-", "grayscale-", "hue-rotate-", "invert-",
 			"saturate-", "sepia-", "backdrop-",
+
+			// Tables
 			"border-collapse", "border-spacing-", "table-layout-", "caption-side-",
+
+			// Transitions & Animation
 			"transition", "duration-", "ease-", "delay-", "animate-",
+
+			// Transforms
 			"transform", "scale-", "rotate-", "translate-", "skew-", "transform-origin-",
+
+			// Interactivity
 			"accent-", "appearance-", "cursor-", "caret-", "pointer-events-", "resize", "scroll-", "scroll-snap-",
 			"touch-", "select-", "will-change-",
+
+			// SVG
 			"fill-", "stroke-", "stroke-width-",
-			"sr-only", "not-sr-only"},
+
+			// Screen Readers
+			"sr-only", "not-sr-only",
+		},
 		VariantOrder: map[string]int{"sm": 0, "md": 1, "lg": 2, "xl": 3, "2xl": 4, "dark": 10,
 			"motion-safe": 20, "motion-reduce": 21, "portrait": 22, "landscape": 23,
 			"first": 30, "last": 31, "odd": 32, "even": 33, "visited": 34, "checked": 35,

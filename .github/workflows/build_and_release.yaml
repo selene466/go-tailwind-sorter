@@ -46,7 +46,7 @@ jobs:
           fi
           VERSION="${{ github.ref_name }}"
           # Use -trimpath to create reproducible builds and -s -w to shrink the binary size.
-          go build -trimpath -ldflags="-s -w -X 'github.com/Dexter2389/go-tailwind-sorter/cmd.version=${VERSION}'" -o "dist/${BINARY_NAME}" .
+          go build -trimpath -ldflags="-s -w -X 'github.com/dexter2389/go-tailwind-sorter/cmd.Version=${VERSION}'" -o "dist/${BINARY_NAME}" .
 
       - name: Create archive
         id: archive # Give the step an ID to reference its outputs
@@ -83,6 +83,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:

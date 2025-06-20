@@ -34,7 +34,7 @@ Download the pre-compiled binary for your operating system from the [**Latest Re
 
 If you have Go installed, you can install `go-tailwind-sorter` globally:
 ```bash
-go install github.com/Dexter2389/go-tailwind-sorter@latest
+go install github.com/dexter2389/go-tailwind-sorter@latest
 ```
 
 ### From Source

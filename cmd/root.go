@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/dexter2389/go-tailwind-sorter/internal/config"
 	"github.com/dexter2389/go-tailwind-sorter/internal/service"
@@ -39,11 +43,13 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		totalViolations := processFileResultsToGetViolations(fileResults)
+		totalViolations, fixableViolations := processFileResults(fileResults, fix)
 
 		if totalViolations > 0 {
-			utils.PrintSummary(totalViolations, fix)
-			os.Exit(1)
+			utils.PrintSummary(totalViolations, fixableViolations, fix)
+			if !fix {
+				os.Exit(1)
+			}
 		} else {
 			fmt.Fprintln(os.Stderr, color.GreenString("✨ All files are sorted."))
 		}
@@ -51,9 +57,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func processFileResultsToGetViolations(fileResults []service.FileResult) int {
-	totalViolations := 0
-
+func processFileResults(fileResults []service.FileResult, shouldFix bool) (totalViolations, fixableViolations int) {
 	for _, fileResult := range fileResults {
 		if fileResult.Err != nil {
 			fmt.Fprintln(os.Stderr, color.RedString("Error processing %s: %w", fileResult.FilePath, fileResult.Err))
@@ -61,20 +65,74 @@ func processFileResultsToGetViolations(fileResults []service.FileResult) int {
 		}
 
 		if len(fileResult.Violations) > 0 {
-			fmt.Fprintln(os.Stderr, color.New(color.Bold).Sprint(fileResult.FilePath))
 			for _, violation := range fileResult.Violations {
-				lineCol := fmt.Sprintf("%d:%d", violation.Line, violation.Col)
-				fmt.Fprintf(os.Stderr, "  %s  %s  %s\n", color.New(color.Faint).Sprint(lineCol), color.RedString(violation.Rule), violation.Msg)
 				totalViolations++
+				if violation.Fixable {
+					fixableViolations++
+				}
+
+				if !shouldFix {
+					processViolation(fileResult.FilePath, fileResult.OriginalBytes, violation)
+				}
 			}
 		}
 	}
 
-	return totalViolations
+	return totalViolations, fixableViolations
+}
+
+func processViolation(filePath string, content []byte, violation service.Violation) {
+	pathColor := color.New(color.Bold)
+	ruleCodeColor := color.New(color.FgRed)
+	fixMarkerColor := color.New(color.Faint)
+	lineNumberColor := color.New(color.FgBlue, color.Faint)
+	pipeColor := color.New(color.FgRed, color.Faint)
+	pointerColor := color.New(color.FgRed)
+	helpColor := color.New(color.FgBlue)
+
+	fixMarker := ""
+	if violation.Fixable {
+		fixMarker = fixMarkerColor.Sprint(" [*]")
+	}
+	fmt.Fprintf(os.Stderr, "%s:%d:%d: %s%s %s\n", pathColor.Sprint(filePath), violation.Line, violation.Col, ruleCodeColor.Sprint(violation.Rule), fixMarker, violation.Msg)
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+
+	const contextLines = 1 // TODO: Make this configurable in the future.
+	var lines []string
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	startLine := max(violation.Line-1-contextLines, 0)
+
+	endLine := violation.Line - 1 + contextLines
+	if endLine >= len(lines) {
+		endLine = len(lines) - 1
+	}
+
+	maxLineNumWidth := len(strconv.Itoa(endLine + 1))
+
+	for idx := startLine; idx <= endLine; idx++ {
+		lineNumStr := strconv.Itoa(idx + 1)
+		paddedLineNum := fmt.Sprintf("%*s", maxLineNumWidth, lineNumStr)
+
+		fmt.Fprintf(os.Stderr, "  %s %s %s\n", lineNumberColor.Sprint(paddedLineNum), pipeColor.Sprint("|"), lines[idx])
+
+		if idx == violation.Line-1 {
+			pointerWidth := max(violation.EndOffset-violation.StartOffset, 1)
+
+			fmt.Fprintf(os.Stderr, "  %s %s %s%s %s\n", strings.Repeat(" ", maxLineNumWidth), pipeColor.Sprint("|"), strings.Repeat(" ", violation.Col-1), pointerColor.Sprint(strings.Repeat("^", pointerWidth)), pointerColor.Sprint(violation.Rule))
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "  %s %s %s\n\n", helpColor.Sprint("="), color.New(color.FgCyan).Sprint("help:"), helpColor.Sprint("Sort the Tailwind CSS classes in the attribute"))
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }

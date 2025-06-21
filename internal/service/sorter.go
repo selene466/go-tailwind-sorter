@@ -202,10 +202,13 @@ func (sorter *Sorter) findFiles(paths []string) ([]string, error) {
 }
 
 type Violation struct {
-	Line int
-	Col  int
-	Rule string
-	Msg  string
+	Line        int
+	Col         int
+	StartOffset int
+	EndOffset   int
+	Rule        string
+	Msg         string
+	Fixable     bool
 }
 
 func (sorter *Sorter) findViolations(content []byte) []Violation {
@@ -222,10 +225,13 @@ func (sorter *Sorter) findViolations(content []byte) []Violation {
 		if twClassString != sortedTWClassString {
 			line, col := utils.OffsetToLineCol(content, startOffset)
 			violations = append(violations, Violation{
-				Line: line,
-				Col:  col,
-				Rule: "TWS001",
-				Msg:  "Unsorted Tailwind classes",
+				Line:        line,
+				Col:         col,
+				StartOffset: startOffset,
+				EndOffset:   endOffset,
+				Rule:        "TWS001",
+				Msg:         "Unsorted Tailwind classes",
+				Fixable:     true,
 			})
 		}
 
@@ -235,10 +241,11 @@ func (sorter *Sorter) findViolations(content []byte) []Violation {
 }
 
 type FileResult struct {
-	FilePath    string
-	Violations  []Violation
-	SortedBytes []byte
-	Err         error
+	FilePath      string
+	Violations    []Violation
+	SortedBytes   []byte
+	OriginalBytes []byte
+	Err           error
 }
 
 func (sorter *Sorter) worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- FileResult) {
@@ -258,9 +265,10 @@ func (sorter *Sorter) worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 
 		sortedContent := sorter.processFileContent(originalContent)
 		results <- FileResult{
-			FilePath:    filePath,
-			Violations:  violations,
-			SortedBytes: sortedContent,
+			FilePath:      filePath,
+			Violations:    violations,
+			SortedBytes:   sortedContent,
+			OriginalBytes: originalContent,
 		}
 	}
 }

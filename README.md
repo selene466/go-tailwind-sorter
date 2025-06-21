@@ -27,16 +27,16 @@ This means I often work in environments without a Node.js toolchain. Setting up 
 
 ## 🚀 Installation
 
-### With `go install` (Recommended)
+### From GitHub Releases (Recommended for most users)
+
+Download the pre-compiled binary for your operating system from the [**Latest Release**](https://github.com/Dexter2389/go-tailwind-sorter/releases/latest) page. Unpack the archive and place the `tailwind-sorter` binary in a directory included in your system's `PATH`.
+
+### With `go install`
 
 If you have Go installed, you can install `go-tailwind-sorter` globally:
 ```bash
 go install github.com/dexter2389/go-tailwind-sorter@latest
 ```
-
-### From GitHub Releases
-
-Download the pre-compiled binary for your operating system from the [Releases](https://github.com/Dexter2389/go-tailwind-sorter/releases) page and place it in a directory in your `PATH`.
 
 ### From Source
 

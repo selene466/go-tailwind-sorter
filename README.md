@@ -170,7 +170,7 @@ This workflow step checks for any unsorted classes and fails the build if any ar
 ```yaml
 - name: Check Tailwind Class Order
   run: |
-    go install github.com/Dexter2389/go-tailwind-sorter@latest
+    go install github.com/dexter2389/go-tailwind-sorter@latest
     tailwind-sorter .
 ```
 

@@ -17,7 +17,7 @@ import (
 const numWorkers int = 4
 
 var arbitraryVariantRegex *regexp.Regexp = regexp.MustCompile(`^\[.+?\]`)
-var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(\$\{[^}]*\})`)
+var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(?s)(\$\{.+\?\})`)
 
 type Sorter struct {
 	Fix    bool
@@ -91,22 +91,8 @@ func (sorter *Sorter) getClassProperty(className string) ClassProperty {
 	return ClassProperty{Variants: variants, UtilityOrder: utilityOrder, OriginalName: className}
 }
 
-func (sorter *Sorter) sortTWClassString(twClassString string) string {
-	if strings.Contains(twClassString, "${") {
-		parts := templateLiteralSplitRegex.Split(twClassString, -1)
-		delimiters := templateLiteralSplitRegex.FindAllString(twClassString, -1)
-
-		var result strings.Builder
-
-		for idx, part := range parts {
-			result.WriteString(sorter.sortTWClassString(part))
-			if idx < len(delimiters) {
-				result.WriteString(delimiters[idx])
-			}
-		}
-	}
-
-	fields := strings.Fields(twClassString)
+func (sorter *Sorter) sortStaticTWClassString(staticTWClassString string) string {
+	fields := strings.Fields(staticTWClassString)
 	if len(fields) == 0 {
 		return ""
 	}
@@ -138,6 +124,38 @@ func (sorter *Sorter) sortTWClassString(twClassString string) string {
 	})
 
 	return strings.Join(uniqueTWClasses, " ")
+}
+
+func (sorter *Sorter) sortTWClassString(twClassString string) string {
+	if strings.Contains(twClassString, "${") {
+		parts := templateLiteralSplitRegex.Split(twClassString, -1)
+
+		var result strings.Builder
+
+		for idx, part := range parts {
+			var processedPart string
+
+			// Even-indexed parts are the static text between the dynamic blocks.
+			// Odd-indexed parts are the dynamic blocks themselves.
+			if idx%2 == 0 {
+				processedPart = sorter.sortStaticTWClassString(part)
+			} else {
+				processedPart = part
+			}
+
+			if processedPart != "" {
+				if result.Len() > 0 {
+					result.WriteString(" ")
+				}
+				result.WriteString(processedPart)
+			}
+		}
+
+		return result.String()
+
+	} else {
+		return sorter.sortStaticTWClassString(twClassString)
+	}
 }
 
 func (sorter *Sorter) processFileContent(content []byte) []byte {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -27,7 +28,7 @@ type Sorter struct {
 }
 
 func SorterServiceNew(config *config.Config, fix bool) (*Sorter, error) {
-	regexPattern := fmt.Sprintf(`((?:%s))(\s*=\s*)(["'`+"`"+`])(.*?)(["'`+"`"+`])`, strings.Join(config.ClassAttributes, "|"))
+	regexPattern := fmt.Sprintf(`((?:%s))(\s*=\s*)`+`(?:((["])(.*?)(["]))|((['])(.*?)([']))|(([`+"`"+`])(.*?)([`+"`"+`])))`, strings.Join(config.ClassAttributes, "|"))
 
 	classAttributesRegex, err := regexp.Compile(regexPattern)
 	if err != nil {
@@ -161,20 +162,33 @@ func (sorter *Sorter) sortTWClassString(twClassString string) string {
 func (sorter *Sorter) processFileContent(content []byte) []byte {
 	return sorter.classAttributesRegex.ReplaceAllFunc(content, func(match []byte) []byte {
 		parts := sorter.classAttributesRegex.FindSubmatch(match)
-		return fmt.Appendf(nil, `%s%s%s%s%s`, parts[1], parts[2], parts[3], sorter.sortTWClassString(string(parts[4])), parts[5])
+
+		var openingQuote, twClassString, closingQuote []byte
+
+		// Based on which type of content group matches get the tw_class string.
+		if parts[5] != nil { // " " content group
+			openingQuote = parts[4]
+			twClassString = parts[5]
+			closingQuote = parts[6]
+		} else if parts[9] != nil { // ' ' content group
+			openingQuote = parts[8]
+			twClassString = parts[9]
+			closingQuote = parts[10]
+		} else if len(parts) > 13 && parts[13] != nil { // ` ` content group
+			openingQuote = parts[12]
+			twClassString = parts[13]
+			closingQuote = parts[14]
+		} else {
+			return match
+		}
+
+		return fmt.Appendf(nil, `%s%s%s%s%s`, parts[1], parts[2], openingQuote, sorter.sortTWClassString(string(twClassString)), closingQuote)
 	})
 }
 
 func (sorter *Sorter) fileHasValidExtension(filePath string) bool {
 	fileExtension := filepath.Ext(filePath)
-
-	for _, pattern := range sorter.Config.FilePatterns {
-		if fileExtension == pattern {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(sorter.Config.FilePatterns, fileExtension)
 }
 
 func (sorter *Sorter) findFiles(paths []string) ([]string, error) {
@@ -234,8 +248,18 @@ func (sorter *Sorter) findViolations(content []byte) []Violation {
 
 	matches := sorter.classAttributesRegex.FindAllSubmatchIndex(content, -1)
 	for _, match := range matches {
-		// match[8] and match[9] are the start and end of the tw_class string itself.
-		startOffset, endOffset := match[8], match[9]
+		var startOffset, endOffset int
+
+		// Based on which type of content group matches get the startOffset and endOffset of the tw_class string.
+		if match[10] != -1 { // " " content group matched
+			startOffset, endOffset = match[10], match[11]
+		} else if match[18] != -1 { // ' ' content group matched
+			startOffset, endOffset = match[18], match[19]
+		} else if match[26] != -1 { // ` ` content group matched
+			startOffset, endOffset = match[26], match[27]
+		} else {
+			continue
+		}
 
 		twClassString := string(content[startOffset:endOffset])
 		sortedTWClassString := sorter.sortTWClassString(twClassString)

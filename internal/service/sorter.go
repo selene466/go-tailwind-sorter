@@ -92,8 +92,43 @@ func (sorter *Sorter) getClassProperty(className string) ClassProperty {
 	return ClassProperty{Variants: variants, UtilityOrder: utilityOrder, OriginalName: className}
 }
 
+func (sorter *Sorter) tokenizeTWClassString(twClassString string) []string {
+	var tokens []string
+	var currentToken strings.Builder
+
+	bracketLevel := 0
+
+	for _, char := range twClassString {
+		switch char {
+		case '[':
+			bracketLevel++
+			currentToken.WriteRune(char)
+		case ']':
+			bracketLevel--
+			currentToken.WriteRune(char)
+		case ' ', '\t', '\n', '\r':
+			if bracketLevel == 0 {
+				if currentToken.Len() > 0 {
+					tokens = append(tokens, currentToken.String())
+					currentToken.Reset()
+				} else {
+					currentToken.WriteRune(char)
+				}
+			}
+		default:
+			currentToken.WriteRune(char)
+		}
+	}
+
+	if currentToken.Len() > 0 {
+		tokens = append(tokens, currentToken.String())
+	}
+
+	return tokens
+}
+
 func (sorter *Sorter) sortStaticTWClassString(staticTWClassString string) string {
-	fields := strings.Fields(staticTWClassString)
+	fields := sorter.tokenizeTWClassString(staticTWClassString)
 	if len(fields) == 0 {
 		return ""
 	}

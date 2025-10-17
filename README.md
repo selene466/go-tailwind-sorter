@@ -1,5 +1,11 @@
 # Tailwind Sorter
 
+This is fork from [https://github.com/Dexter2389/go-tailwind-sorter](https://github.com/Dexter2389/go-tailwind-sorter).
+
+Added [daisyUI](https://daisyui.com/) classes.
+
+---
+
 [![Go Version](https://img.shields.io/badge/go-1.18+-blue.svg)](https://go.dev/dl/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Dexter2389/go-tailwind-sorter)](https://goreportcard.com/report/github.com/Dexter2389/go-tailwind-sorter)
 ![license](https://img.shields.io/badge/license-BSD--2--Clause-brightgreen)
@@ -10,12 +16,12 @@ A fast, standalone, and configurable tool for sorting [Tailwind CSS](https://tai
 
 ## ✨ Features
 
--   **Extremely Fast:** Built in Go, it processes files concurrently to sort your entire codebase in milliseconds.
--   **Easy Interface:** By default, it checks for violations and reports them clearly. Use the `--fix` flag to write changes to disk.
--   **Zero Dependencies:** Distributes as a single binary. No need for Node.js, npm, or any other runtime.
--   **Configurable:** Customize file patterns and class-like attributes via a `tailwind-sorter.toml` file.
--   **`pre-commit` Integration:** Automatically sort your classes before you commit your code.
--   **CI/CD Friendly:** Drop it into any GitHub Action or other CI pipeline to enforce a consistent class order.
+- **Extremely Fast:** Built in Go, it processes files concurrently to sort your entire codebase in milliseconds.
+- **Easy Interface:** By default, it checks for violations and reports them clearly. Use the `--fix` flag to write changes to disk.
+- **Zero Dependencies:** Distributes as a single binary. No need for Node.js, npm, or any other runtime.
+- **Configurable:** Customize file patterns and class-like attributes via a `tailwind-sorter.toml` file.
+- **`pre-commit` Integration:** Automatically sort your classes before you commit your code.
+- **CI/CD Friendly:** Drop it into any GitHub Action or other CI pipeline to enforce a consistent class order.
 
 ## Motivation
 
@@ -34,6 +40,7 @@ Download the pre-compiled binary for your operating system from the [**Latest Re
 ### With `go install`
 
 If you have Go installed, you can install `go-tailwind-sorter` globally:
+
 ```bash
 go install github.com/dexter2389/go-tailwind-sorter@latest
 ```
@@ -58,9 +65,9 @@ The CLI is designed to be simple and intuitive, following the modern "check by d
 
 ### Global Flags
 
--   `--fix`: Apply fixes to files instead of just checking.
--   `--config <path>`: Path to a custom TOML config file.
--   `--version`: Show the application version.
+- `--fix`: Apply fixes to files instead of just checking.
+- `--config <path>`: Path to a custom TOML config file.
+- `--version`: Show the application version.
 
 ### Checking for Unsorted Classes (Default)
 
@@ -95,6 +102,7 @@ tailwind-sorter --fix ./src/
 ```
 
 The output will confirm that the fixes have been applied:
+
 ```
 Found 1 violations (1 fixed, 0 remaining).
 ```
@@ -103,8 +111,8 @@ Found 1 violations (1 fixed, 0 remaining).
 
 `tailwind-sorter` is configured via a TOML file. The tool can be configured in two ways:
 
-1.  Create a `tailwind-sorter.toml` file in your project's root directory, which will be discovered automatically.
-2.  Use a custom path with the `--config` flag: `tailwind-sorter --config /path/to/my-config.toml .`
+1. Create a `tailwind-sorter.toml` file in your project's root directory, which will be discovered automatically.
+2. Use a custom path with the `--config` flag: `tailwind-sorter --config /path/to/my-config.toml .`
 
 #### Example config
 
@@ -127,8 +135,8 @@ class_attributes = ["_class", "class", "x-bind:class", ":class"]
 
 Automate class sorting by integrating `tailwind-sorter` with [`pre-commit`](https://pre-commit.com/).
 
-1.  Install `pre-commit` if you haven't already.
-2.  Add the following to your `.pre-commit-config.yaml` file:
+1. Install `pre-commit` if you haven't already.
+2. Add the following to your `.pre-commit-config.yaml` file:
 
 ```yaml
 # .pre-commit-config.yaml
@@ -153,6 +161,7 @@ repos:
 ```
 
 3. Install the hook:
+
    ```bash
    pre-commit install
    ```
@@ -188,8 +197,8 @@ Please feel free to open an issue or submit a PR.
 
 ## Acknowledgements
 
--   **Tailwind Labs** for creating `prettier-plugin-tailwindcss`, which serves as the reference for the class sorting order.
--   **Astral** for creating `Ruff`, which is the inspiration for the CLI design and user experience.
+- **Tailwind Labs** for creating `prettier-plugin-tailwindcss`, which serves as the reference for the class sorting order.
+- **Astral** for creating `Ruff`, which is the inspiration for the CLI design and user experience.
 
 ## License
 

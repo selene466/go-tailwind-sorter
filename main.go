@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/dexter2389/go-tailwind-sorter/cmd"
+	"github.com/selene466/go-tailwind-sorter/cmd"
 )
 
 func main() {

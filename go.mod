@@ -1,4 +1,4 @@
-module github.com/dexter2389/go-tailwind-sorter
+module github.com/selene466/go-tailwind-sorter
 
 go 1.24.4
 

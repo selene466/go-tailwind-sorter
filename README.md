@@ -8,7 +8,7 @@ A fast, standalone, and configurable tool for sorting [Tailwind CSS](https://tai
 
 ---
 
-## ✨ Features
+## Features
 
 -   **Extremely Fast:** Built in Go, it processes files concurrently to sort your entire codebase in milliseconds.
 -   **Easy Interface:** By default, it checks for violations and reports them clearly. Use the `--fix` flag to write changes to disk.
@@ -25,9 +25,26 @@ For projects using Tailwind CSS, the official `prettier-plugin-tailwindcss` is t
 
 This means I often work in environments without a Node.js toolchain. Setting up a whole Node.js toolchain just for one plugin felt like a step backward. I needed a solution that felt native to my stack. That's why I built `tailwind-sorter`, a single, fast, dependency-free binary that brings the power of the official sorter to any project, regardless of the tech stack.
 
-## 🚀 Installation
+## Installation
 
-### From GitHub Releases (Recommended for most users)
+### The Install Script (Recommended)
+
+The easiest way to install `tailwind-sorter` on macOS, Linux, or WSL/Git Bash (Windows) is via our installation script. It will automatically download the correct binary, place it in `~/.local/bin`, and configure your `$PATH`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Dexter2389/go-tailwind-sorter/main/install.sh | bash
+```
+
+**Need a specific version of `twvm`?** You can pass the `VERSION` environment variable to the script:
+```bash
+VERSION=v0.2.5 curl -fsSL https://raw.githubusercontent.com/Dexter2389/go-tailwind-sorter/main/install.sh | bash
+```
+
+> **macOS Users:** Because this tool downloads standalone binaries, macOS Gatekeeper may flag them. The install script will proactively ask if you want to remove the quarantine attribute (`xattr -d com.apple.quarantine`) so the tool runs smoothly out of the box!
+
+
+
+### From GitHub Releases
 
 Download the pre-compiled binary for your operating system from the [**Latest Release**](https://github.com/Dexter2389/go-tailwind-sorter/releases/latest) page. Unpack the archive and place the `tailwind-sorter` binary in a directory included in your system's `PATH`.
 
@@ -49,7 +66,7 @@ VERSION=$(git describe --tags --abbrev=0)
 go build -ldflags="-X 'github.com/dexter2389/go-tailwind-sorter/cmd.version=${VERSION}'" -o tailwind-sorter .
 
 # Then move the binary to a location in your PATH
-# sudo mv ./tailwind-sorter /usr/local/bin/
+# mv ./tailwind-sorter ~/.local/bin/
 ```
 
 ## Usage
@@ -193,4 +210,4 @@ Please feel free to open an issue or submit a PR.
 
 ## License
 
-This project is licensed under the [BSD-2-Clause License](./LICENSE.md)
+This project is licensed under the [BSD-2-Clause License](./LICENSE)

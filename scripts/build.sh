@@ -1,11 +1,11 @@
-set -e
+set -eo pipefail
 
 detect_arch() {
     local ARCH="$(uname -m)"
 
     case $ARCH in
     x86_64 | amd64)
-        echo "x64"
+        echo "amd64"
         ;;
     aarch64 | arm64)
         echo "arm64"
@@ -27,7 +27,7 @@ detect_os() {
     darwin)
         echo "darwin"
         ;;
-    mingw | msys | cygwin)
+    mingw* | msys* | cygwin*) 
         echo "windows"
         ;;
     *)
@@ -55,14 +55,14 @@ if [ -z "$VERSION" ]; then
     VERSION="dev"
 fi
 
-BINARY_NAME="tailwind-sorter-$VERSION-$GOOS-$GOARCH"
+BINARY_NAME="tailwind-sorter-$GOOS-$GOARCH"
 
-if [ "$GOOS" == "windows" ]; then
+if [[ "$GOOS" == "windows" ]]; then
     BINARY_NAME+=".exe"
 fi
 
 echo "Building for $VERSION-$GOOS-$GOARCH..."
-go build -trimpath -ldflags="-s -w -X 'github.com/dexter2389/go-tailwind-sorter/cmd.Version=${VERSION}'" -o "dist/${BINARY_NAME}" .
+GOOS="$GOOS" GOARCH="$GOARCH" go build -trimpath -ldflags="-s -w -X 'github.com/dexter2389/go-tailwind-sorter/cmd.Version=${VERSION}'" -o "dist/${BINARY_NAME}" .
 echo "✅ Build complete."
 
 echo "$BINARY_NAME"

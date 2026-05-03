@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/BurntSushi/toml"
 )
@@ -53,70 +54,109 @@ func New(configFile string) (*Config, error) {
 func defaultConfig() *Config {
 	return &Config{
 		ClassOrder: []string{
-			// Layout (Box Sizing, Display, Floats, Clear, Isolation, Object Fit/Position, Overflow, Overscroll, Position, Visibility, Z-Index)
-			"box-border", "box-content", "block", "inline-block", "inline", "flex", "inline-flex", "table", "inline-table",
-			"table-caption", "table-cell", "table-column", "table-column-group", "table-footer-group", "table-header-group",
-			"table-row-group", "table-row", "flow-root", "grid", "inline-grid", "contents", "list-item", "hidden", "float-",
-			"clear-", "isolate", "isolation-auto", "object-", "overflow-", "overscroll-", "static", "fixed", "absolute",
-			"relative", "sticky", "top-", "right-", "bottom-", "left-", "inset-", "visible", "invisible", "z-",
+			// Accessibility
+			"sr-only", "not-sr-only",
 
-			// Flexbox & Grid
-			"flex-basis-", "flex-direction-", "flex-wrap-", "flex-", "flex-grow", "flex-shrink", "order-", "grid-cols-",
-			"grid-col-", "grid-rows-", "grid-row-", "grid-flow-", "gap-", "justify-", "justify-items-", "justify-self-",
-			"items-", "align-", "place-content-", "place-items-", "place-self-",
+			// Core / Layout
+			"container", "columns-", "break-after-", "break-before-", "break-inside-",
+			"box-decoration-", "box-border", "box-content",
+			"block", "inline-block", "inline", "flex", "inline-flex", "table", "inline-table",
+			"table-caption", "table-cell", "table-column", "table-column-group", "table-footer-group",
+			"table-header-group", "table-row-group", "table-row", "flow-root", "grid", "inline-grid",
+			"contents", "list-item", "hidden",
+			"float-", "clear-", "isolate", "isolation-auto",
+			"object-", "overflow-", "overscroll-",
+			"static", "fixed", "absolute", "relative", "sticky",
+			"inset-", "top-", "right-", "bottom-", "left-",
+			"visible", "invisible", "collapse", "z-",
 
-			// Spacing (Padding, Margin, Space Between)
-			"p-", "px-", "py-", "pt-", "pr-", "pb-", "pl-", "m-", "mx-", "my-", "mt-", "mr-", "mb-", "ml-", "space-",
+			// Flexbox & Grid Container
+			"basis-", "flex-row", "flex-col", "flex-wrap", "flex-nowrap", "flex-",
+			"grow", "shrink", "flex-grow", "flex-shrink", "order-",
+			"grid-cols-", "col-", "grid-rows-", "row-", "grid-flow-", "auto-cols-", "auto-rows-",
+			"gap-", "justify-", "content-", "items-", "self-", "place-",
 
-			// Sizing (Width, Min-Width, Max-Width, Height, Min-Height, Max-Height)
-			"w-", "min-w-", "max-w-", "h-", "min-h-", "max-h-",
+			// Sizing (v4 size- first)
+			"size-", "w-", "min-w-", "max-w-", "h-", "min-h-", "max-h-", "field-sizing-",
+
+			// Spacing
+			"p-", "px-", "py-", "pt-", "pr-", "pb-", "pl-",
+			"m-", "mx-", "my-", "mt-", "mr-", "mb-", "ml-",
+			"space-",
 
 			// Typography
-			"font-", "text-", "italic", "not-italic", "font-weight-", "font-variant-numeric-", "letter-spacing-",
-			"line-clamp-", "line-height-", "list-", "text-align-", "text-color-", "text-decoration-",
-			"text-decoration-color-", "text-decoration-style-", "text-decoration-thickness-", "text-underline-offset-",
-			"text-transform-", "text-overflow-", "text-indent-", "vertical-align-", "whitespace-", "break-",
-			"content-",
+			"font-", "text-", "italic", "not-italic", "antialiased", "subpixel-antialiased",
+			"tracking-", "leading-", "list-", "color-scheme-", "text-shadow-",
+			"uppercase", "lowercase", "capitalize", "normal-case",
+			"truncate", "line-clamp-", "text-ellipsis", "text-clip",
+			"align-", "whitespace-", "break-", "content-",
 
-			// Backgrounds
-			"bg-", "bg-opacity-", "bg-origin-", "bg-position-", "bg-repeat-", "bg-size-", "bg-image-", "gradient-to-",
-			"from-", "via-", "to-",
+			// Backgrounds (v4 bg-linear-to replacing gradient)
+			"bg-", "bg-linear-to-", "bg-gradient-to-", "from-", "via-", "to-",
 
-			// Borders
-			"rounded-", "border", "border-", "border-opacity-", "border-style-", "divide-", "divide-opacity-",
-			"divide-style-", "outline-", "outline-offset-", "outline-style-", "ring-", "ring-offset-", "ring-opacity-",
+			// Borders & Outlines (v4 outline-hidden replacing outline-none)
+			"rounded-", "border", "border-", "divide-", "outline-", "outline-hidden", "outline-none", "ring-",
 
-			// Effects (Box Shadow, Opacity, Mix Blend, Background Blend)
+			// Effects & Filters
 			"shadow-", "opacity-", "mix-blend-", "bg-blend-",
-
-			// Filters (Blur, Brightness, Contrast, Drop Shadow, Grayscale, Hue Rotate, Invert, Saturate, Sepia, Backdrop)
-			"filter", "blur-", "brightness-", "contrast-", "drop-shadow-", "grayscale-", "hue-rotate-", "invert-",
-			"saturate-", "sepia-", "backdrop-",
+			"filter", "blur-", "brightness-", "contrast-", "drop-shadow-", "grayscale-", "hue-rotate-", "invert-", "saturate-", "sepia-",
+			"backdrop-",
 
 			// Tables
 			"border-collapse", "border-spacing-", "table-layout-", "caption-side-",
 
-			// Transitions & Animation
+			// Transitions & Animations
 			"transition", "duration-", "ease-", "delay-", "animate-",
 
-			// Transforms
-			"transform", "scale-", "rotate-", "translate-", "skew-", "transform-origin-",
+			// Transforms (v4 3D Additions)
+			"transform", "scale-", "rotate-", "translate-", "skew-", "origin-",
+			"perspective-", "perspective-origin-", "backface-", "transform-style-",
 
 			// Interactivity
-			"accent-", "appearance-", "cursor-", "caret-", "pointer-events-", "resize", "scroll-", "scroll-snap-",
-			"touch-", "select-", "will-change-",
+			"accent-", "appearance-", "cursor-", "caret-", "pointer-events-", "resize", "scroll-", "snap-", "touch-", "select-", "will-change-",
 
 			// SVG
 			"fill-", "stroke-", "stroke-width-",
-
-			// Screen Readers
-			"sr-only", "not-sr-only",
 		},
-		VariantOrder: map[string]int{"sm": 0, "md": 1, "lg": 2, "xl": 3, "2xl": 4, "dark": 10,
-			"motion-safe": 20, "motion-reduce": 21, "portrait": 22, "landscape": 23,
-			"first": 30, "last": 31, "odd": 32, "even": 33, "visited": 34, "checked": 35,
-			"disabled": 36, "enabled": 37, "hover": 40, "focus": 41, "focus-within": 42,
-			"focus-visible": 43, "active": 44},
+		VariantOrder: map[string]int{
+			// Container Queries & Breakpoints
+			"@3xs": 10, "@2xs": 11, "@xs": 12, "@sm": 13, "@md": 14, "@lg": 15, "@xl": 16, "@2xl": 17, "@3xl": 18, "@4xl": 19, "@5xl": 20, "@6xl": 21, "@7xl": 22,
+			"@min-": 25, "@max-": 26,
+			"sm": 30, "md": 31, "lg": 32, "xl": 33, "2xl": 34,
+			"max-sm": 35, "max-md": 36, "max-lg": 37, "max-xl": 38, "max-2xl": 39,
+
+			// Themes & Media
+			"dark": 50, "light": 51,
+			"print": 52, "screen": 53,
+			"portrait": 54, "landscape": 55,
+			"motion-safe": 56, "motion-reduce": 57,
+			"contrast-more": 58, "contrast-less": 59,
+			"forced-colors": 60,
+
+			// Dynamic Prefixes (e.g. group-hover, has-[.foo])
+			"group-": 70, "peer-": 71, "has-": 72, "not-": 73, "aria-": 74, "data-": 75, "supports-": 76,
+
+			// Standard States
+			"first": 80, "last": 81, "only": 82, "odd": 83, "even": 84,
+			"first-of-type": 85, "last-of-type": 86, "only-of-type": 87,
+			"visited": 88, "target": 89, "open": 90, "default": 91,
+			"checked": 92, "indeterminate": 93, "placeholder-shown": 94,
+			"autofill": 95, "optional": 96, "required": 97,
+			"valid": 98, "invalid": 99, "in-range": 100, "out-of-range": 101,
+			"read-only": 102, "empty": 103,
+
+			// Interaction
+			"focus-within": 110, "hover": 111, "focus": 112, "focus-visible": 113, "active": 114,
+			"disabled": 115, "enabled": 116, "inert": 117,
+
+			// v4 specifics
+			"starting": 120,
+
+			// Pseudo-elements
+			"before": 130, "after": 131, "first-letter": 132, "first-line": 133,
+			"marker": 134, "selection": 135, "file": 136, "backdrop": 137,
+			"placeholder": 138,
+		},
 		FilePatterns:    []string{".html"},
 		ClassAttributes: []string{"class"},
 	}
@@ -130,4 +170,8 @@ func (config *Config) merge(userConfig *UserConfig) {
 	if len(userConfig.ClassAttributes) > 0 {
 		config.ClassAttributes = userConfig.ClassAttributes
 	}
+
+	sort.Slice(config.ClassOrder, func(i, j int) bool {
+		return len(config.ClassOrder[i]) > len(config.ClassOrder[j])
+	})
 }

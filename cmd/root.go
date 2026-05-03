@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -17,6 +18,7 @@ import (
 
 var fix bool
 var configFile string
+var workers int
 var Version = "dev"
 
 var rootCmd = &cobra.Command{
@@ -31,7 +33,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		sorterService, err := service.SorterServiceNew(config, fix)
+		sorterService, err := service.SorterServiceNew(config, fix, workers)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, color.RedString("Error initializing sorter: %v", err))
 			os.Exit(1)
@@ -60,7 +62,7 @@ var rootCmd = &cobra.Command{
 func processFileResults(fileResults []service.FileResult, shouldFix bool) (totalViolations, fixableViolations int) {
 	for _, fileResult := range fileResults {
 		if fileResult.Err != nil {
-			fmt.Fprintln(os.Stderr, color.RedString("Error processing %s: %w", fileResult.FilePath, fileResult.Err))
+			fmt.Fprintln(os.Stderr, color.RedString("Error processing %s: %v", fileResult.FilePath, fileResult.Err))
 			continue
 		}
 
@@ -142,4 +144,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "Path to a custom TOML config file.")
 
 	rootCmd.Flags().BoolVar(&fix, "fix", false, "Apply fixes to the files.")
+	rootCmd.Flags().IntVar(&workers, "workers", runtime.NumCPU(), "Number of concurrent workers (defaults to logical CPUs)")
 }

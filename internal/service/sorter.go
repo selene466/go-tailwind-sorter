@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
@@ -15,31 +16,37 @@ import (
 	"github.com/dexter2389/go-tailwind-sorter/internal/utils"
 )
 
-const numWorkers int = 4
-
-var arbitraryVariantRegex *regexp.Regexp = regexp.MustCompile(`^\[.+?\]`)
-var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(?s)(\$\{.+\?\})`)
+var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(?s)(\$\{.+?\})`)
 
 type Sorter struct {
-	Fix    bool
-	Config *config.Config
+	Fix     bool
+	Workers int
+	Config  *config.Config
 
 	classAttributesRegex *regexp.Regexp
+	classTrie            *utils.PrefixTrie
 }
 
-func SorterServiceNew(config *config.Config, fix bool) (*Sorter, error) {
-	regexPattern := fmt.Sprintf(`((?:%s))(\s*=\s*)`+`(?:((["])(.*?)(["]))|((['])(.*?)([']))|(([`+"`"+`])(.*?)([`+"`"+`])))`, strings.Join(config.ClassAttributes, "|"))
+func SorterServiceNew(config *config.Config, fix bool, workers int) (*Sorter, error) {
+	regexPattern := fmt.Sprintf(`(?s)((?:%s))(\s*=\s*)`+`(?:((["])(.*?)(["]))|((['])(.*?)([']))|(([`+"`"+`])(.*?)([`+"`"+`])))`, strings.Join(config.ClassAttributes, "|"))
 
 	classAttributesRegex, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("invalid classAttributes pattern: %w", err)
 	}
 
+	trie := utils.NewPrefixTrie()
+	for idx, prefix := range config.ClassOrder {
+		trie.Insert(prefix, idx)
+	}
+
 	return &Sorter{
-		Fix:    fix,
-		Config: config,
+		Fix:     fix,
+		Workers: workers,
+		Config:  config,
 
 		classAttributesRegex: classAttributesRegex,
+		classTrie:            trie,
 	}, nil
 }
 
@@ -55,17 +62,34 @@ type ClassProperty struct {
 }
 
 func (sorter *Sorter) getClassProperty(className string) ClassProperty {
-	parts := strings.Split(className, ":")
-	variants := make([]VariantProperty, 0) // Create an empty slice
+	parts := utils.SplitVariants(className)
+	variants := make([]VariantProperty, 0, len(parts)-1)
 
 	utilityIndex := len(parts) - 1
 	for idx, part := range parts {
-		if arbitraryVariantRegex.MatchString(part) {
-			variants = append(variants, VariantProperty{Order: 99, Name: part})
-			continue
-		}
+		// Exact Match (e.g. "hover", "sm", "dark")
 		if order, ok := sorter.Config.VariantOrder[part]; ok {
 			variants = append(variants, VariantProperty{Order: order, Name: part})
+			continue
+		}
+
+		// Dynamic Prefix Match (e.g. "group-hover", "has-[.foo]", "@max-md")
+		matched := false
+		if dashIdx := strings.IndexAny(part, "-[("); dashIdx != -1 {
+			basePrefix := part[:dashIdx+1] // Extracts "group-" or "has-" or "@max-"
+			if order, ok := sorter.Config.VariantOrder[basePrefix]; ok {
+				variants = append(variants, VariantProperty{Order: order, Name: part})
+				matched = true
+			}
+		}
+
+		if matched {
+			continue
+		}
+
+		// Complete Arbitrary Variants (e.g. "[&_p]", "@min-(600px)")
+		if strings.HasPrefix(part, "[") || strings.HasPrefix(part, "@") {
+			variants = append(variants, VariantProperty{Order: 999, Name: part})
 			continue
 		}
 
@@ -81,13 +105,7 @@ func (sorter *Sorter) getClassProperty(className string) ClassProperty {
 		return variants[i].Name < variants[j].Name
 	})
 
-	utilityOrder := len(sorter.Config.ClassOrder)
-	for idx, prefix := range sorter.Config.ClassOrder {
-		if strings.HasPrefix(utility, prefix) {
-			utilityOrder = idx
-			break
-		}
-	}
+	utilityOrder := sorter.classTrie.GetLongestPrefixOrder(utility, len(sorter.Config.ClassOrder))
 
 	return ClassProperty{Variants: variants, UtilityOrder: utilityOrder, OriginalName: className}
 }
@@ -111,10 +129,11 @@ func (sorter *Sorter) tokenizeTWClassString(twClassString string) []string {
 				if currentToken.Len() > 0 {
 					tokens = append(tokens, currentToken.String())
 					currentToken.Reset()
-				} else {
-					currentToken.WriteRune(char)
 				}
+			} else {
+				currentToken.WriteRune(char)
 			}
+
 		default:
 			currentToken.WriteRune(char)
 		}
@@ -194,33 +213,6 @@ func (sorter *Sorter) sortTWClassString(twClassString string) string {
 	}
 }
 
-func (sorter *Sorter) processFileContent(content []byte) []byte {
-	return sorter.classAttributesRegex.ReplaceAllFunc(content, func(match []byte) []byte {
-		parts := sorter.classAttributesRegex.FindSubmatch(match)
-
-		var openingQuote, twClassString, closingQuote []byte
-
-		// Based on which type of content group matches get the tw_class string.
-		if parts[5] != nil { // " " content group
-			openingQuote = parts[4]
-			twClassString = parts[5]
-			closingQuote = parts[6]
-		} else if parts[9] != nil { // ' ' content group
-			openingQuote = parts[8]
-			twClassString = parts[9]
-			closingQuote = parts[10]
-		} else if len(parts) > 13 && parts[13] != nil { // ` ` content group
-			openingQuote = parts[12]
-			twClassString = parts[13]
-			closingQuote = parts[14]
-		} else {
-			return match
-		}
-
-		return fmt.Appendf(nil, `%s%s%s%s%s`, parts[1], parts[2], openingQuote, sorter.sortTWClassString(string(twClassString)), closingQuote)
-	})
-}
-
 func (sorter *Sorter) fileHasValidExtension(filePath string) bool {
 	fileExtension := filepath.Ext(filePath)
 	return slices.Contains(sorter.Config.FilePatterns, fileExtension)
@@ -278,26 +270,38 @@ type Violation struct {
 	Fixable     bool
 }
 
-func (sorter *Sorter) findViolations(content []byte) []Violation {
+func (sorter *Sorter) analyzeAndFixContent(content []byte) ([]Violation, []byte) {
 	var violations []Violation
+	var result bytes.Buffer
 
 	matches := sorter.classAttributesRegex.FindAllSubmatchIndex(content, -1)
+	if len(matches) == 0 {
+		return nil, content
+	}
+
+	result.Grow(len(content))
+	lastIdx := 0
+
 	for _, match := range matches {
 		var startOffset, endOffset int
 
-		// Based on which type of content group matches get the startOffset and endOffset of the tw_class string.
-		if match[10] != -1 { // " " content group matched
+		if match[10] != -1 { // " "
 			startOffset, endOffset = match[10], match[11]
-		} else if match[18] != -1 { // ' ' content group matched
+		} else if match[18] != -1 { // ' '
 			startOffset, endOffset = match[18], match[19]
-		} else if match[26] != -1 { // ` ` content group matched
+		} else if match[26] != -1 { // ` `
 			startOffset, endOffset = match[26], match[27]
 		} else {
 			continue
 		}
 
+		result.Write(content[lastIdx:startOffset])
+
 		twClassString := string(content[startOffset:endOffset])
 		sortedTWClassString := sorter.sortTWClassString(twClassString)
+
+		result.WriteString(sortedTWClassString)
+		lastIdx = endOffset
 
 		if twClassString != sortedTWClassString {
 			line, col := utils.OffsetToLineCol(content, startOffset)
@@ -311,10 +315,11 @@ func (sorter *Sorter) findViolations(content []byte) []Violation {
 				Fixable:     true,
 			})
 		}
-
 	}
 
-	return violations
+	result.Write(content[lastIdx:])
+
+	return violations, result.Bytes()
 }
 
 type FileResult struct {
@@ -335,12 +340,11 @@ func (sorter *Sorter) worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 			continue
 		}
 
-		violations := sorter.findViolations(originalContent)
+		violations, sortedContent := sorter.analyzeAndFixContent(originalContent)
 		if len(violations) == 0 {
 			continue
 		}
 
-		sortedContent := sorter.processFileContent(originalContent)
 		results <- FileResult{
 			FilePath:      filePath,
 			Violations:    violations,
@@ -357,21 +361,25 @@ func (sorter *Sorter) Run(paths []string) ([]FileResult, error) {
 	}
 
 	var wg sync.WaitGroup
-	jobs := make(chan string, len(filesToProcess))
-	results := make(chan FileResult, len(filesToProcess))
+	jobs := make(chan string, sorter.Workers)
+	results := make(chan FileResult, sorter.Workers)
 
-	for range numWorkers {
+	for range sorter.Workers {
 		wg.Add(1)
 		go sorter.worker(&wg, jobs, results)
 	}
 
-	for _, file := range filesToProcess {
-		jobs <- file
-	}
+	go func() {
+		for _, file := range filesToProcess {
+			jobs <- file
+		}
+		close(jobs)
+	}()
 
-	close(jobs)
-	wg.Wait()
-	close(results)
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
 
 	var fileResults []FileResult
 	for result := range results {
@@ -384,8 +392,14 @@ func (sorter *Sorter) Run(paths []string) ([]FileResult, error) {
 			fileResults = append(fileResults, result)
 
 			if sorter.Fix {
-				if err := os.WriteFile(result.FilePath, result.SortedBytes, 0644); err != nil {
-					result.Err = fmt.Errorf("failed to write fixes to %s: %w", result.FilePath, err)
+				info, statErr := os.Stat(result.FilePath)
+
+				if statErr == nil {
+					if err := os.WriteFile(result.FilePath, result.SortedBytes, info.Mode()); err != nil {
+						result.Err = fmt.Errorf("failed to write fixes to %s: %w", result.FilePath, err)
+					}
+				} else {
+					result.Err = fmt.Errorf("failed to read permissions for %s before writing: %w", result.FilePath, statErr)
 				}
 			}
 		}

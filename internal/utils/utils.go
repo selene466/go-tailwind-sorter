@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -43,4 +44,81 @@ func PrintSummary(totalViolations, fixableViolations int, shouldFix bool) {
 			fmt.Fprintf(os.Stderr, "%s %d potentially fixable with the --fix option.\n", color.New(color.Bold, color.Faint).Sprint("[*]"), fixableViolations)
 		}
 	}
+}
+
+func SplitVariants(className string) []string {
+	var parts []string
+	var current strings.Builder
+	bracketLevel := 0
+	parenLevel := 0
+
+	for _, char := range className {
+		switch char {
+		case '[':
+			bracketLevel++
+		case ']':
+			bracketLevel--
+		case '(':
+			parenLevel++
+		case ')':
+			parenLevel--
+		case ':':
+			if bracketLevel == 0 && parenLevel == 0 {
+				parts = append(parts, current.String())
+				current.Reset()
+				continue
+			}
+		}
+		current.WriteRune(char)
+	}
+	parts = append(parts, current.String())
+	return parts
+}
+
+type TrieNode struct {
+	children map[rune]*TrieNode
+	order    int
+}
+
+func NewTrieNode() *TrieNode {
+	return &TrieNode{
+		children: make(map[rune]*TrieNode),
+		order:    -1,
+	}
+}
+
+type PrefixTrie struct {
+	root *TrieNode
+}
+
+func NewPrefixTrie() *PrefixTrie {
+	return &PrefixTrie{root: NewTrieNode()}
+}
+
+func (trie *PrefixTrie) Insert(prefix string, order int) {
+	node := trie.root
+	for _, ch := range prefix {
+		if _, exists := node.children[ch]; !exists {
+			node.children[ch] = NewTrieNode()
+		}
+		node = node.children[ch]
+	}
+	node.order = order
+}
+
+func (trie *PrefixTrie) GetLongestPrefixOrder(s string, defaultOrder int) int {
+	node := trie.root
+	bestOrder := defaultOrder
+
+	for _, ch := range s {
+		if nextNode, exists := node.children[ch]; exists {
+			node = nextNode
+			if node.order != -1 {
+				bestOrder = node.order
+			}
+		} else {
+			break
+		}
+	}
+	return bestOrder
 }

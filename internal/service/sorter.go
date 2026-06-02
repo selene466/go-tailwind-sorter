@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dexter2389/go-tailwind-sorter/internal/config"
-	"github.com/dexter2389/go-tailwind-sorter/internal/utils"
+	"github.com/selene466/go-tailwind-sorter/internal/config"
+	"github.com/selene466/go-tailwind-sorter/internal/utils"
 )
 
 var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(?s)(\$\{.+?\})`)
@@ -223,7 +223,6 @@ func (sorter *Sorter) findFiles(paths []string) ([]string, error) {
 
 	for _, path := range paths {
 		info, err := os.Stat(path)
-
 		if err != nil {
 			return nil, fmt.Errorf("invalid path %s: %w", path, err)
 		}
@@ -244,7 +243,6 @@ func (sorter *Sorter) findFiles(paths []string) ([]string, error) {
 			}
 			return nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to walk directory %s: %w", path, err)
 		}

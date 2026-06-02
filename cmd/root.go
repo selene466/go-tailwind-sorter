@@ -9,17 +9,19 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dexter2389/go-tailwind-sorter/internal/config"
-	"github.com/dexter2389/go-tailwind-sorter/internal/service"
-	"github.com/dexter2389/go-tailwind-sorter/internal/utils"
 	"github.com/fatih/color"
+	"github.com/selene466/go-tailwind-sorter/internal/config"
+	"github.com/selene466/go-tailwind-sorter/internal/service"
+	"github.com/selene466/go-tailwind-sorter/internal/utils"
 	"github.com/spf13/cobra"
 )
 
-var fix bool
-var configFile string
-var workers int
-var Version = "dev"
+var (
+	fix        bool
+	configFile string
+	workers    int
+	Version    = "dev"
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "tailwind-sorter [PATH...]",
@@ -55,7 +57,6 @@ var rootCmd = &cobra.Command{
 		} else {
 			fmt.Fprintln(os.Stderr, color.GreenString("✨ All files are sorted."))
 		}
-
 	},
 }
 

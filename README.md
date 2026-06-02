@@ -1,5 +1,15 @@
 # Tailwind Sorter
 
+This is fork from [https://github.com/Dexter2389/go-tailwind-sorter](https://github.com/Dexter2389/go-tailwind-sorter).
+
+Added [daisyUI](https://daisyui.com/) classes.
+
+```sh
+go install github.com/selene466/go-tailwind-sorter@latest
+```
+
+---
+
 [![Go Version](https://img.shields.io/badge/go-1.18+-blue.svg)](https://go.dev/dl/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Dexter2389/go-tailwind-sorter)](https://goreportcard.com/report/github.com/Dexter2389/go-tailwind-sorter)
 ![license](https://img.shields.io/badge/license-BSD--2--Clause-brightgreen)

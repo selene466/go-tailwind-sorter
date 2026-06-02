@@ -5,7 +5,11 @@ This is fork from [https://github.com/Dexter2389/go-tailwind-sorter](https://git
 Added [daisyUI](https://daisyui.com/) classes.
 
 ```sh
-go install github.com/selene466/go-tailwind-sorter@latest
+# go install
+go install github.com/selene466/go-tailwind-sorter@v0.3.1
+
+# mise global install
+mise use -g "go:github.com/selene466/go-tailwind-sorter@v0.3.1"
 ```
 
 ---

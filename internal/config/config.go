@@ -71,7 +71,7 @@ func defaultConfig() *Config {
 
 			// daisyUI Modal
 			"modal", "modal-box", "modal-action", "modal-backdrop", "modal-toggle", "modal-open", "modal-top", "modal-middle",
-			"modal-bottom", "mdoal-start", "modal-end",
+			"modal-bottom", "modal-start", "modal-end",
 
 			// daisyUI Swap
 			"swap", "swap-on", "swap-off", "swap-indeterminate", "swap-active", "swap-rotate", "swap-flip",
@@ -81,6 +81,10 @@ func defaultConfig() *Config {
 
 			// daisyUI Avatar
 			"avatar", "avatar-group", "avatar-online", "avatar-offline", "avatar-placeholder",
+
+			// daisyUI Aura
+			"aura", "aura-dual", "aura-rainbow", "aura-holo", "aura-gold", "aura-silver", "aura-glow", "aura-xs", "aura-sm",
+			"aura-md", "aura-lg", "aura-xl",
 
 			// daisyUI Badge
 			"badge", "badge-outline", "badge-dash", "badge-soft", "badge-ghost", "badge-primary", "badge-secondary",
@@ -145,6 +149,10 @@ func defaultConfig() *Config {
 			"link", "link-hover", "link-primary", "link-secondary", "link-accent", "link-neutral", "link-success",
 			"link-info", "link-warning", "link-error",
 
+			// daisyUI Megamenu
+			"megamenu", "megamenu-wide", "megamenu-full", "megamenu-vertical", "megamenu-xs", "megamenu-sm", "megamenu-md",
+			"megamenu-lg", "megamenu-xl",
+
 			// daisyUI Menu
 			"menu", "menu-title", "menu-dropdown", "menu-dropdown-toggle", "menu-disabled", "menu-active", "menu-focus",
 			"menu-dropdown-show", "menu-xs", "menu-sm", "menu-md", "menu-lg", "menu-xl", "menu-horizontal", "menu-vertical",
@@ -182,12 +190,12 @@ func defaultConfig() *Config {
 			"toast", "toast-start", "toast-center", "toast-end", "toast-top", "toast-middle", "toast-bottom",
 
 			// daisyUI Tooltip
-			"tooltip", "tooltip-content", "tooltip-top", "tooltip-bottom", "tooltip-left", "tooltip-right", "tooltip-open",
-			"tooltip-primary", "tooltip-secondary", "tooltip-accent", "tooltip-neutral", "tooltip-info", "tooltip-success",
-			"tooltip-warning", "tooltip-error",
+			"tooltip", "tooltip-content", "tooltip-top", "tooltip-bottom", "tooltip-left", "tooltip-right", "tooltip-start",
+			"tooltip-center", "tooltip-end", "tooltip-open", "tooltip-primary", "tooltip-secondary", "tooltip-accent",
+			"tooltip-neutral", "tooltip-info", "tooltip-success", "tooltip-warning", "tooltip-error",
 
 			// daisyUI Calendar
-			"cally", "pika-single", "react-day-picker",
+			"cally", "vc", "react-day-picker",
 
 			// daisyUI Checkbox
 			"checkbox", "checkbox-primary", "checkbox-secondary", "checkbox-accent", "checkbox-neutral", "checkbox-info",
@@ -214,7 +222,7 @@ func defaultConfig() *Config {
 
 			// daisyUI Range Slider
 			"range", "range-primary", "range-secondary", "range-accent", "range-neutral", "range-info", "range-success",
-			"range-warning", "range-error", "range-xs", "range-sm", "range-md", "range-lg", "range-xl",
+			"range-warning", "range-error", "range-xs", "range-sm", "range-md", "range-lg", "range-xl", "range-vertical",
 
 			// daisyUI Rating
 			"rating", "rating-half", "rating-hidden", "rating-xs", "rating-sm", "rating-md", "rating-lg", "rating-xl",
@@ -238,6 +246,10 @@ func defaultConfig() *Config {
 
 			// daisyUI Validator
 			"validator", "validator-hint",
+
+			// daisyUI OTP
+			"otp", "otp-joined", "otp-xs", "otp-sm", "otp-md", "otp-lg", "otp-xl", "otp-primary", "otp-secondary", "otp-accent",
+			"otp-neutral", "otp-info", "otp-success", "otp-warning", "otp-error",
 
 			// daisyUI Divider
 			"divider", "divider-primary", "divider-secondary", "divider-accent", "divider-neutral", "divider-info",

@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/selene466/go-tailwind-sorter/internal/config"
-	"github.com/selene466/go-tailwind-sorter/internal/service"
-	"github.com/selene466/go-tailwind-sorter/internal/utils"
+	"github.com/selene466/go-tailwind-sorter/v5/internal/config"
+	"github.com/selene466/go-tailwind-sorter/v5/internal/service"
+	"github.com/selene466/go-tailwind-sorter/v5/internal/utils"
 	"github.com/spf13/cobra"
 )
 

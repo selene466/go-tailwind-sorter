@@ -150,12 +150,13 @@ func defaultConfig() *Config {
 			"link-info", "link-warning", "link-error",
 
 			// daisyUI Megamenu
-			"megamenu", "megamenu-wide", "megamenu-full", "megamenu-vertical", "megamenu-xs", "megamenu-sm", "megamenu-md",
-			"megamenu-lg", "megamenu-xl",
+			"megamenu", "megamenu-active", "megamenu-wide", "megamenu-full", "megamenu-vertical", "megamenu-xs", "megamenu-sm",
+			"megamenu-md", "megamenu-lg", "megamenu-xl",
 
 			// daisyUI Menu
 			"menu", "menu-title", "menu-dropdown", "menu-dropdown-toggle", "menu-disabled", "menu-active", "menu-focus",
-			"menu-dropdown-show", "menu-xs", "menu-sm", "menu-md", "menu-lg", "menu-xl", "menu-horizontal", "menu-vertical",
+			"menu-dropdown-show", "menu-paged", "menu-xs", "menu-sm", "menu-md", "menu-lg", "menu-xl", "menu-horizontal",
+			"menu-vertical",
 
 			// daisyUI Navbar
 			"navbar", "navbar-start", "navbar-center", "navbar-end",

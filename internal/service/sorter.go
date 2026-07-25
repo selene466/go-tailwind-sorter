@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/selene466/go-tailwind-sorter/internal/config"
-	"github.com/selene466/go-tailwind-sorter/internal/utils"
+	"github.com/selene466/go-tailwind-sorter/v5/internal/config"
+	"github.com/selene466/go-tailwind-sorter/v5/internal/utils"
 )
 
 var templateLiteralSplitRegex *regexp.Regexp = regexp.MustCompile(`(?s)(\$\{.+?\})`)

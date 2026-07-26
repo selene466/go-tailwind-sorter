@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/BurntSushi/toml"
 )
@@ -443,7 +442,4 @@ func (config *Config) merge(userConfig *UserConfig) {
 		config.ClassAttributes = userConfig.ClassAttributes
 	}
 
-	sort.Slice(config.ClassOrder, func(i, j int) bool {
-		return len(config.ClassOrder[i]) > len(config.ClassOrder[j])
-	})
 }

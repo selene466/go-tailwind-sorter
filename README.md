@@ -6,10 +6,10 @@ Added [daisyUI](https://daisyui.com/) classes.
 
 ```sh
 # go install
-go install github.com/selene466/go-tailwind-sorter/v5@v5.7.1
+go install github.com/selene466/go-tailwind-sorter/v5@v5.7.4
 
 # mise global install
-mise use -g "go:github.com/selene466/go-tailwind-sorter/v5@v5.7.1"
+mise use -g "go:github.com/selene466/go-tailwind-sorter/v5@v5.7.4"
 ```
 
 ---
